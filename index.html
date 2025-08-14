@@ -2,260 +2,216 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Drag & Drop Meal Planner</title>
+  <title>Friendly Meal Planner</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      background: #f9f9f9;
-    }
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
-      color: #333;
-    }
-    #container {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f2f2f2;
       display: flex;
-      gap: 20px;
-      justify-content: center;
-      flex-wrap: wrap;
+      height: 100vh;
+      overflow: hidden;
     }
-    #recipe-list {
-      width: 220px;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      padding: 10px;
-      height: 600px;
+
+    .planner {
+      width: 60%;
+      background: #fff;
+      padding: 20px;
       overflow-y: auto;
     }
-    #recipe-list h2 {
+
+    .recipes {
+      width: 40%;
+      background: #f9f9f9;
+      padding: 20px;
+      overflow-y: auto;
+      border-left: 1px solid #ddd;
+    }
+
+    h2 {
       text-align: center;
+      color: #333;
+    }
+
+    .day {
+      margin-bottom: 20px;
+    }
+
+    .day h3 {
       margin-bottom: 10px;
+      color: #444;
     }
-    .recipe {
-      background: #4CAF50;
+
+    .meals {
+      display: flex;
+      gap: 10px;
+    }
+
+    .meal {
+      flex: 1;
+      min-height: 80px;
+      border: 2px dashed #ccc;
+      border-radius: 6px;
+      padding: 10px;
+      text-align: center;
+      background: #fafafa;
+      transition: background 0.3s;
+    }
+
+    .meal.drag-over {
+      background: #e0ffe0;
+      border-color: #28a745;
+    }
+
+    .meal span {
+      display: block;
+      margin-top: 8px;
+      background: #28a745;
       color: white;
-      padding: 8px;
-      margin: 5px 0;
+      padding: 5px;
       border-radius: 5px;
-      cursor: grab;
-      user-select: none;
-      font-weight: bold;
+      cursor: pointer;
     }
-    #meal-plan {
-      flex-grow: 1;
-      max-width: 800px;
+
+    .recipe-card {
+      display: flex;
+      align-items: center;
       background: white;
       border-radius: 8px;
-      padding: 15px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      overflow-x: auto;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      margin-bottom: 15px;
+      padding: 10px;
+      cursor: grab;
     }
-    #meal-plan table {
-      width: 100%;
-      border-collapse: collapse;
+
+    .recipe-card img {
+      width: 60px;
+      height: 60px;
+      border-radius: 6px;
+      object-fit: cover;
+      margin-right: 10px;
     }
-    #meal-plan th, #meal-plan td {
-      border: 1px solid #ddd;
-      padding: 12px;
-      text-align: center;
-      vertical-align: top;
-      min-width: 120px;
-      height: 100px;
-      position: relative;
-    }
-    #meal-plan th {
-      background: #efefef;
-    }
-    .meal-slot {
-      background: #fafafa;
-      border-radius: 5px;
-      min-height: 60px;
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-      justify-content: center;
-      align-items: center;
-    }
-    .meal-slot.drag-over {
-      border: 2px dashed #4CAF50;
-      background: #e6ffe6;
-    }
-    .meal-item {
-      background: #2196F3;
-      color: white;
-      padding: 4px 8px;
-      border-radius: 3px;
-      font-size: 0.9em;
-      cursor: pointer;
-      user-select: none;
-      max-width: 100%;
-      overflow-wrap: break-word;
-    }
-    .clear-button {
-      margin-top: 10px;
-      padding: 8px 12px;
-      background: #dc3545;
-      border: none;
-      color: white;
-      border-radius: 5px;
-      cursor: pointer;
+
+    .recipe-name {
+      font-weight: bold;
+      color: #333;
     }
   </style>
 </head>
 <body>
-  <h1>Drag & Drop Meal Planner</h1>
-  <div id="container">
-    <div id="recipe-list">
-      <h2>Recipes</h2>
-      <!-- Recipes will be dynamically added here -->
-    </div>
 
-    <div id="meal-plan">
-      <table>
-        <thead>
-          <tr>
-            <th>Day / Meal</th>
-            <th>Breakfast</th>
-            <th>Lunch</th>
-            <th>Dinner</th>
-          </tr>
-        </thead>
-        <tbody id="meal-plan-body">
-          <!-- Meal slots dynamically generated -->
-        </tbody>
-      </table>
-      <button class="clear-button" onclick="clearPlan()">Clear Plan</button>
-    </div>
+  <!-- Left: Planner -->
+  <div class="planner">
+    <h2>Weekly Meal Planner</h2>
+    <div id="mealPlanner"></div>
+  </div>
+
+  <!-- Right: Recipes -->
+  <div class="recipes">
+    <h2>Recipes</h2>
+    <div id="recipeList"></div>
   </div>
 
   <script>
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     const meals = ['Breakfast', 'Lunch', 'Dinner'];
 
-    // Predefined recipes
     const recipes = [
-      { name: "Pancakes", ingredients: ["Flour", "Milk", "Eggs", "Maple Syrup"], instructions: "Mix and fry." },
-      { name: "Chicken Salad", ingredients: ["Chicken", "Lettuce", "Tomatoes", "Dressing"], instructions: "Mix all." },
-      { name: "Spaghetti Bolognese", ingredients: ["Spaghetti", "Ground Beef", "Tomato Sauce"], instructions: "Cook and combine." },
-      { name: "Omelette", ingredients: ["Eggs", "Cheese", "Spinach"], instructions: "Beat eggs and cook." },
-      { name: "Grilled Cheese Sandwich", ingredients: ["Bread", "Cheese", "Butter"], instructions: "Grill sandwich." },
-      { name: "Steak with Veggies", ingredients: ["Steak", "Broccoli", "Carrots"], instructions: "Grill steak and steam veggies." },
-      { name: "Fruit Smoothie", ingredients: ["Banana", "Berries", "Yogurt"], instructions: "Blend all." },
-      { name: "Tacos", ingredients: ["Tortillas", "Beef", "Lettuce", "Cheese"], instructions: "Assemble tacos." }
+      { name: 'Pancakes', img: 'https://via.placeholder.com/60?text=Pancakes' },
+      { name: 'Chicken Salad', img: 'https://via.placeholder.com/60?text=Salad' },
+      { name: 'Spaghetti', img: 'https://via.placeholder.com/60?text=Pasta' },
+      { name: 'Omelette', img: 'https://via.placeholder.com/60?text=Omelette' },
+      { name: 'Grilled Cheese', img: 'https://via.placeholder.com/60?text=Sandwich' },
+      { name: 'Fruit Smoothie', img: 'https://via.placeholder.com/60?text=Smoothie' },
+      { name: 'Tacos', img: 'https://via.placeholder.com/60?text=Tacos' },
+      { name: 'Steak', img: 'https://via.placeholder.com/60?text=Steak' }
     ];
 
-    const recipeListEl = document.getElementById('recipe-list');
-    const mealPlanBody = document.getElementById('meal-plan-body');
+    const recipeListEl = document.getElementById('recipeList');
+    const mealPlannerEl = document.getElementById('mealPlanner');
+    const mealPlan = {};
 
-    // Load saved plan from localStorage
-    let mealPlan = JSON.parse(localStorage.getItem('mealPlan')) || {};
+    // === Render Recipe Cards ===
+    recipes.forEach(recipe => {
+      const card = document.createElement('div');
+      card.className = 'recipe-card';
+      card.draggable = true;
+      card.innerHTML = `
+        <img src="${recipe.img}" alt="${recipe.name}" />
+        <div class="recipe-name">${recipe.name}</div>
+      `;
+      card.addEventListener('dragstart', e => {
+        e.dataTransfer.setData('text/plain', recipe.name);
+      });
+      recipeListEl.appendChild(card);
+    });
 
-    // Render recipes as draggable items
-    function renderRecipes() {
-      recipes.forEach(recipe => {
-        const div = document.createElement('div');
-        div.className = 'recipe';
-        div.draggable = true;
-        div.textContent = recipe.name;
+    // === Render Planner UI ===
+    days.forEach(day => {
+      const dayDiv = document.createElement('div');
+      dayDiv.className = 'day';
+      const title = document.createElement('h3');
+      title.textContent = day;
+      dayDiv.appendChild(title);
 
-        div.addEventListener('dragstart', e => {
-          e.dataTransfer.setData('text/plain', recipe.name);
-          e.dataTransfer.effectAllowed = "move";
+      const mealsDiv = document.createElement('div');
+      mealsDiv.className = 'meals';
+
+      meals.forEach(meal => {
+        const slot = document.createElement('div');
+        slot.className = 'meal';
+        slot.dataset.day = day;
+        slot.dataset.meal = meal;
+        slot.innerHTML = `<strong>${meal}</strong>`;
+
+        slot.addEventListener('dragover', e => {
+          e.preventDefault();
+          slot.classList.add('drag-over');
         });
 
-        recipeListEl.appendChild(div);
-      });
-    }
+        slot.addEventListener('dragleave', () => {
+          slot.classList.remove('drag-over');
+        });
 
-    // Render meal plan table rows
+        slot.addEventListener('drop', e => {
+          e.preventDefault();
+          slot.classList.remove('drag-over');
+          const recipeName = e.dataTransfer.getData('text/plain');
+          mealPlan[day] = mealPlan[day] || {};
+          mealPlan[day][meal] = recipeName;
+          renderMealPlan();
+        });
+
+        mealsDiv.appendChild(slot);
+      });
+
+      dayDiv.appendChild(mealsDiv);
+      mealPlannerEl.appendChild(dayDiv);
+    });
+
     function renderMealPlan() {
-      mealPlanBody.innerHTML = '';
-      days.forEach(day => {
-        const tr = document.createElement('tr');
-        const dayCell = document.createElement('td');
-        dayCell.textContent = day;
-        dayCell.style.fontWeight = 'bold';
-        tr.appendChild(dayCell);
+      document.querySelectorAll('.meal').forEach(slot => {
+        const day = slot.dataset.day;
+        const meal = slot.dataset.meal;
+        const recipe = mealPlan[day]?.[meal];
 
-        meals.forEach(meal => {
-          const td = document.createElement('td');
-          td.className = 'meal-slot';
-          td.dataset.day = day;
-          td.dataset.meal = meal;
+        // Remove previous content
+        const oldSpans = slot.querySelectorAll('span');
+        oldSpans.forEach(s => s.remove());
 
-          td.addEventListener('dragover', e => {
-            e.preventDefault();
-            td.classList.add('drag-over');
-          });
-
-          td.addEventListener('dragleave', e => {
-            td.classList.remove('drag-over');
-          });
-
-          td.addEventListener('drop', e => {
-            e.preventDefault();
-            td.classList.remove('drag-over');
-            const recipeName = e.dataTransfer.getData('text/plain');
-            assignMeal(day, meal, recipeName);
+        if (recipe) {
+          const recipeSpan = document.createElement('span');
+          recipeSpan.textContent = recipe;
+          recipeSpan.title = 'Click to remove';
+          recipeSpan.addEventListener('click', () => {
+            delete mealPlan[day][meal];
             renderMealPlan();
-            savePlan();
           });
-
-          // Show assigned recipe(s) in the slot
-          const assignedRecipe = mealPlan[day]?.[meal];
-          if (assignedRecipe) {
-            const mealDiv = document.createElement('div');
-            mealDiv.className = 'meal-item';
-            mealDiv.textContent = assignedRecipe;
-            mealDiv.title = 'Click to remove';
-
-            mealDiv.addEventListener('click', () => {
-              removeMeal(day, meal);
-              renderMealPlan();
-              savePlan();
-            });
-
-            td.appendChild(mealDiv);
-          }
-
-          tr.appendChild(td);
-        });
-
-        mealPlanBody.appendChild(tr);
+          slot.appendChild(recipeSpan);
+        }
       });
     }
-
-    function assignMeal(day, meal, recipeName) {
-      if (!mealPlan[day]) mealPlan[day] = {};
-      mealPlan[day][meal] = recipeName;
-    }
-
-    function removeMeal(day, meal) {
-      if (mealPlan[day]) {
-        delete mealPlan[day][meal];
-        if (Object.keys(mealPlan[day]).length === 0) {
-          delete mealPlan[day];
-        }
-      }
-    }
-
-    function savePlan() {
-      localStorage.setItem('mealPlan', JSON.stringify(mealPlan));
-    }
-
-    function clearPlan() {
-      if (confirm("Are you sure you want to clear the meal plan?")) {
-        mealPlan = {};
-        localStorage.removeItem('mealPlan');
-        renderMealPlan();
-      }
-    }
-
-    // Initialize
-    renderRecipes();
-    renderMealPlan();
   </script>
 </body>
 </html>
