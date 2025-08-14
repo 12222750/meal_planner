@@ -27,7 +27,7 @@
       background: white;
       border-radius: 8px;
       padding: 15px;
-      width: 300px;
+      width: 320px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
 
@@ -66,6 +66,12 @@
 
     .day-meal {
       margin-bottom: 10px;
+    }
+
+    .meal-label {
+      margin-top: 10px;
+      font-weight: bold;
+      color: #444;
     }
 
     select {
@@ -123,14 +129,16 @@
 
   <script>
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const meals = ['Breakfast', 'Lunch', 'Dinner'];
 
     let recipes = JSON.parse(localStorage.getItem("recipes")) || [];
     let pantry = JSON.parse(localStorage.getItem("pantry")) || [];
 
+    // ===== Recipe Handling =====
     function updateRecipeList() {
       const list = document.getElementById("recipeList");
       list.innerHTML = '';
-      recipes.forEach((r, index) => {
+      recipes.forEach((r) => {
         const li = document.createElement('li');
         li.textContent = `${r.name}`;
         list.appendChild(li);
@@ -139,63 +147,80 @@
 
     function addRecipe() {
       const name = document.getElementById("recipeName").value.trim();
-      const ingredients = document.getElementById("recipeIngredients").value.trim().split(',');
+      const ingredients = document.getElementById("recipeIngredients").value.trim().split(',').map(i => i.trim());
       const instructions = document.getElementById("recipeInstructions").value.trim();
 
-      if (!name || ingredients.length === 0) return alert("Please fill out the recipe");
+      if (!name || ingredients.length === 0 || !instructions) {
+        return alert("Please fill out all fields.");
+      }
 
       recipes.push({ name, ingredients, instructions });
       localStorage.setItem("recipes", JSON.stringify(recipes));
       updateRecipeList();
+      createMealPlannerUI();
 
       document.getElementById("recipeName").value = '';
       document.getElementById("recipeIngredients").value = '';
       document.getElementById("recipeInstructions").value = '';
     }
 
+    // ===== Meal Planner UI =====
     function createMealPlannerUI() {
       const planner = document.getElementById("mealPlanner");
       planner.innerHTML = '';
+
+      const savedPlan = JSON.parse(localStorage.getItem("mealPlan")) || {};
+
       days.forEach(day => {
-        const div = document.createElement('div');
-        div.classList.add("day-meal");
+        const dayDiv = document.createElement('div');
+        dayDiv.classList.add('day-meal');
+        const dayLabel = document.createElement('div');
+        dayLabel.classList.add('meal-label');
+        dayLabel.textContent = day;
+        dayDiv.appendChild(dayLabel);
 
-        const label = document.createElement('label');
-        label.textContent = day;
+        meals.forEach(meal => {
+          const label = document.createElement('label');
+          label.textContent = meal;
 
-        const select = document.createElement('select');
-        select.id = `meal-${day}`;
-        const defaultOption = document.createElement('option');
-        defaultOption.value = "";
-        defaultOption.textContent = "-- Select Recipe --";
-        select.appendChild(defaultOption);
+          const select = document.createElement('select');
+          select.id = `meal-${day}-${meal}`;
 
-        recipes.forEach(r => {
-          const option = document.createElement('option');
-          option.value = r.name;
-          option.textContent = r.name;
-          select.appendChild(option);
+          const defaultOption = document.createElement('option');
+          defaultOption.value = "";
+          defaultOption.textContent = "-- Select Recipe --";
+          select.appendChild(defaultOption);
+
+          recipes.forEach(r => {
+            const option = document.createElement('option');
+            option.value = r.name;
+            option.textContent = r.name;
+            select.appendChild(option);
+          });
+
+          if (savedPlan[day] && savedPlan[day][meal]) {
+            select.value = savedPlan[day][meal];
+          }
+
+          dayDiv.appendChild(label);
+          dayDiv.appendChild(select);
         });
 
-        div.appendChild(label);
-        div.appendChild(select);
-        planner.appendChild(div);
-      });
-
-      // Load existing plan
-      const savedPlan = JSON.parse(localStorage.getItem("mealPlan")) || {};
-      days.forEach(day => {
-        const select = document.getElementById(`meal-${day}`);
-        if (savedPlan[day]) select.value = savedPlan[day];
+        planner.appendChild(dayDiv);
       });
     }
 
     function saveMealPlan() {
       const plan = {};
+
       days.forEach(day => {
-        const selected = document.getElementById(`meal-${day}`).value;
-        plan[day] = selected;
+        plan[day] = {};
+        meals.forEach(meal => {
+          const selected = document.getElementById(`meal-${day}-${meal}`).value;
+          plan[day][meal] = selected;
+        });
       });
+
       localStorage.setItem("mealPlan", JSON.stringify(plan));
       alert("Meal Plan Saved!");
     }
@@ -205,11 +230,12 @@
       createMealPlannerUI();
     }
 
+    // ===== Pantry =====
     function addPantryItem() {
       const item = document.getElementById("pantryItem").value.trim();
       if (!item) return;
 
-      pantry.push(item);
+      pantry.push(item.toLowerCase());
       localStorage.setItem("pantry", JSON.stringify(pantry));
       updatePantryList();
       document.getElementById("pantryItem").value = '';
@@ -225,28 +251,46 @@
       });
     }
 
+    // ===== Grocery List Generator =====
     function generateGroceryList() {
       const plan = JSON.parse(localStorage.getItem("mealPlan")) || {};
-      let items = [];
+      const ingredientsByMeal = { Breakfast: [], Lunch: [], Dinner: [] };
 
-      Object.values(plan).forEach(recipeName => {
-        const recipe = recipes.find(r => r.name === recipeName);
-        if (recipe) items = items.concat(recipe.ingredients);
+      days.forEach(day => {
+        meals.forEach(meal => {
+          const recipeName = plan[day]?.[meal];
+          if (recipeName) {
+            const recipe = recipes.find(r => r.name === recipeName);
+            if (recipe) {
+              ingredientsByMeal[meal].push(...recipe.ingredients.map(i => i.trim().toLowerCase()));
+            }
+          }
+        });
       });
-
-      // Remove duplicates & pantry items
-      const finalItems = [...new Set(items)].filter(i => !pantry.includes(i.trim()));
 
       const list = document.getElementById("groceryList");
       list.innerHTML = '';
-      finalItems.forEach(item => {
-        const li = document.createElement('li');
-        li.textContent = item;
-        list.appendChild(li);
+
+      meals.forEach(meal => {
+        const items = ingredientsByMeal[meal]
+          .filter(i => !pantry.includes(i))
+          .filter((value, index, self) => self.indexOf(value) === index); // remove duplicates
+
+        if (items.length > 0) {
+          const header = document.createElement('li');
+          header.innerHTML = `<strong>${meal}</strong>`;
+          list.appendChild(header);
+
+          items.forEach(item => {
+            const li = document.createElement('li');
+            li.textContent = item;
+            list.appendChild(li);
+          });
+        }
       });
     }
 
-    // Initialize
+    // ===== Init =====
     updateRecipeList();
     updatePantryList();
     createMealPlannerUI();
