@@ -1,1 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Meal Planner</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f7f7f7;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+
+    .planner {
+      max-width: 600px;
+      margin: auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    .day {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .day label {
+      flex: 1;
+      font-weight: bold;
+    }
+
+    .day input {
+      flex: 2;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    .buttons {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .buttons button {
+      padding: 10px 20px;
+      margin: 5px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .save-btn {
+      background-color: #28a745;
+      color: white;
+    }
+
+    .clear-btn {
+      background-color: #dc3545;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <h1>Weekly Meal Planner</h1>
+  <div class="planner" id="mealPlanner">
+    <div class="day"><label>Monday:</label><input type="text" id="monday"></div>
+    <div class="day"><label>Tuesday:</label><input type="text" id="tuesday"></div>
+    <div class="day"><label>Wednesday:</label><input type="text" id="wednesday"></div>
+    <div class="day"><label>Thursday:</label><input type="text" id="thursday"></div>
+    <div class="day"><label>Friday:</label><input type="text" id="friday"></div>
+    <div class="day"><label>Saturday:</label><input type="text" id="saturday"></div>
+    <div class="day"><label>Sunday:</label><input type="text" id="sunday"></div>
+    <div class="buttons">
+      <button class="save-btn" onclick="saveMeals()">Save</button>
+      <button class="clear-btn" onclick="clearMeals()">Clear</button>
+    </div>
+  </div>
+
+  <script>
+    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+    function saveMeals() {
+      days.forEach(day => {
+        const meal = document.getElementById(day).value;
+        localStorage.setItem(day, meal);
+      });
+      alert("Meals saved!");
+    }
+
+    function loadMeals() {
+      days.forEach(day => {
+        const savedMeal = localStorage.getItem(day);
+        if (savedMeal) {
+          document.getElementById(day).value = savedMeal;
+        }
+      });
+    }
+
+    function clearMeals() {
+      if (confirm("Are you sure you want to clear all meals?")) {
+        days.forEach(day => {
+          document.getElementById(day).value = '';
+          localStorage.removeItem(day);
+        });
+      }
+    }
+
+    // Load meals when page loads
+    window.onload = loadMeals;
+  </script>
+</body>
+</html>
 
