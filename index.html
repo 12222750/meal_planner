@@ -2,121 +2,254 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Meal Planner</title>
+  <title>Advanced Meal Planner</title>
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #f7f7f7;
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
       margin: 0;
       padding: 20px;
     }
 
-    h1 {
+    h1, h2 {
       text-align: center;
       color: #333;
     }
 
-    .planner {
-      max-width: 600px;
-      margin: auto;
-      background: #fff;
-      padding: 20px;
-      border-radius: 10px;
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      justify-content: center;
+    }
+
+    .box {
+      background: white;
+      border-radius: 8px;
+      padding: 15px;
+      width: 300px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
 
-    .day {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 15px;
-    }
-
-    .day label {
-      flex: 1;
+    label {
+      display: block;
+      margin-top: 10px;
       font-weight: bold;
     }
 
-    .day input {
-      flex: 2;
+    input, textarea, select {
+      width: 100%;
       padding: 8px;
+      margin-top: 5px;
+      border-radius: 4px;
       border: 1px solid #ccc;
-      border-radius: 5px;
     }
 
-    .buttons {
-      text-align: center;
-      margin-top: 20px;
-    }
-
-    .buttons button {
-      padding: 10px 20px;
-      margin: 5px;
-      font-size: 16px;
+    button {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #28a745;
+      color: white;
       border: none;
       border-radius: 5px;
       cursor: pointer;
     }
 
-    .save-btn {
-      background-color: #28a745;
-      color: white;
+    button.clear {
+      background-color: #dc3545;
     }
 
-    .clear-btn {
-      background-color: #dc3545;
-      color: white;
+    ul {
+      list-style-type: disc;
+      padding-left: 20px;
+    }
+
+    .day-meal {
+      margin-bottom: 10px;
+    }
+
+    select {
+      background: #fff;
     }
   </style>
 </head>
 <body>
-  <h1>Weekly Meal Planner</h1>
-  <div class="planner" id="mealPlanner">
-    <div class="day"><label>Monday:</label><input type="text" id="monday"></div>
-    <div class="day"><label>Tuesday:</label><input type="text" id="tuesday"></div>
-    <div class="day"><label>Wednesday:</label><input type="text" id="wednesday"></div>
-    <div class="day"><label>Thursday:</label><input type="text" id="thursday"></div>
-    <div class="day"><label>Friday:</label><input type="text" id="friday"></div>
-    <div class="day"><label>Saturday:</label><input type="text" id="saturday"></div>
-    <div class="day"><label>Sunday:</label><input type="text" id="sunday"></div>
-    <div class="buttons">
-      <button class="save-btn" onclick="saveMeals()">Save</button>
-      <button class="clear-btn" onclick="clearMeals()">Clear</button>
+
+  <h1>Advanced Meal Planner</h1>
+
+  <div class="container">
+
+    <!-- Recipe Management -->
+    <div class="box">
+      <h2>Add Recipe</h2>
+      <label>Recipe Name</label>
+      <input type="text" id="recipeName">
+
+      <label>Ingredients (comma separated)</label>
+      <input type="text" id="recipeIngredients">
+
+      <label>Instructions</label>
+      <textarea id="recipeInstructions" rows="4"></textarea>
+
+      <button onclick="addRecipe()">Add Recipe</button>
+      <h3>Saved Recipes</h3>
+      <ul id="recipeList"></ul>
     </div>
+
+    <!-- Meal Planner -->
+    <div class="box">
+      <h2>Weekly Meal Plan</h2>
+      <div id="mealPlanner"></div>
+      <button onclick="saveMealPlan()">Save Plan</button>
+      <button class="clear" onclick="clearMealPlan()">Clear Plan</button>
+    </div>
+
+    <!-- Pantry -->
+    <div class="box">
+      <h2>Pantry</h2>
+      <input type="text" id="pantryItem" placeholder="Enter pantry item">
+      <button onclick="addPantryItem()">Add</button>
+      <ul id="pantryList"></ul>
+    </div>
+
+    <!-- Grocery List -->
+    <div class="box">
+      <h2>Grocery List</h2>
+      <button onclick="generateGroceryList()">Generate</button>
+      <ul id="groceryList"></ul>
+    </div>
+
   </div>
 
   <script>
-    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-    function saveMeals() {
-      days.forEach(day => {
-        const meal = document.getElementById(day).value;
-        localStorage.setItem(day, meal);
-      });
-      alert("Meals saved!");
-    }
+    let recipes = JSON.parse(localStorage.getItem("recipes")) || [];
+    let pantry = JSON.parse(localStorage.getItem("pantry")) || [];
 
-    function loadMeals() {
-      days.forEach(day => {
-        const savedMeal = localStorage.getItem(day);
-        if (savedMeal) {
-          document.getElementById(day).value = savedMeal;
-        }
+    function updateRecipeList() {
+      const list = document.getElementById("recipeList");
+      list.innerHTML = '';
+      recipes.forEach((r, index) => {
+        const li = document.createElement('li');
+        li.textContent = `${r.name}`;
+        list.appendChild(li);
       });
     }
 
-    function clearMeals() {
-      if (confirm("Are you sure you want to clear all meals?")) {
-        days.forEach(day => {
-          document.getElementById(day).value = '';
-          localStorage.removeItem(day);
+    function addRecipe() {
+      const name = document.getElementById("recipeName").value.trim();
+      const ingredients = document.getElementById("recipeIngredients").value.trim().split(',');
+      const instructions = document.getElementById("recipeInstructions").value.trim();
+
+      if (!name || ingredients.length === 0) return alert("Please fill out the recipe");
+
+      recipes.push({ name, ingredients, instructions });
+      localStorage.setItem("recipes", JSON.stringify(recipes));
+      updateRecipeList();
+
+      document.getElementById("recipeName").value = '';
+      document.getElementById("recipeIngredients").value = '';
+      document.getElementById("recipeInstructions").value = '';
+    }
+
+    function createMealPlannerUI() {
+      const planner = document.getElementById("mealPlanner");
+      planner.innerHTML = '';
+      days.forEach(day => {
+        const div = document.createElement('div');
+        div.classList.add("day-meal");
+
+        const label = document.createElement('label');
+        label.textContent = day;
+
+        const select = document.createElement('select');
+        select.id = `meal-${day}`;
+        const defaultOption = document.createElement('option');
+        defaultOption.value = "";
+        defaultOption.textContent = "-- Select Recipe --";
+        select.appendChild(defaultOption);
+
+        recipes.forEach(r => {
+          const option = document.createElement('option');
+          option.value = r.name;
+          option.textContent = r.name;
+          select.appendChild(option);
         });
-      }
+
+        div.appendChild(label);
+        div.appendChild(select);
+        planner.appendChild(div);
+      });
+
+      // Load existing plan
+      const savedPlan = JSON.parse(localStorage.getItem("mealPlan")) || {};
+      days.forEach(day => {
+        const select = document.getElementById(`meal-${day}`);
+        if (savedPlan[day]) select.value = savedPlan[day];
+      });
     }
 
-    // Load meals when page loads
-    window.onload = loadMeals;
+    function saveMealPlan() {
+      const plan = {};
+      days.forEach(day => {
+        const selected = document.getElementById(`meal-${day}`).value;
+        plan[day] = selected;
+      });
+      localStorage.setItem("mealPlan", JSON.stringify(plan));
+      alert("Meal Plan Saved!");
+    }
+
+    function clearMealPlan() {
+      localStorage.removeItem("mealPlan");
+      createMealPlannerUI();
+    }
+
+    function addPantryItem() {
+      const item = document.getElementById("pantryItem").value.trim();
+      if (!item) return;
+
+      pantry.push(item);
+      localStorage.setItem("pantry", JSON.stringify(pantry));
+      updatePantryList();
+      document.getElementById("pantryItem").value = '';
+    }
+
+    function updatePantryList() {
+      const list = document.getElementById("pantryList");
+      list.innerHTML = '';
+      pantry.forEach(item => {
+        const li = document.createElement('li');
+        li.textContent = item;
+        list.appendChild(li);
+      });
+    }
+
+    function generateGroceryList() {
+      const plan = JSON.parse(localStorage.getItem("mealPlan")) || {};
+      let items = [];
+
+      Object.values(plan).forEach(recipeName => {
+        const recipe = recipes.find(r => r.name === recipeName);
+        if (recipe) items = items.concat(recipe.ingredients);
+      });
+
+      // Remove duplicates & pantry items
+      const finalItems = [...new Set(items)].filter(i => !pantry.includes(i.trim()));
+
+      const list = document.getElementById("groceryList");
+      list.innerHTML = '';
+      finalItems.forEach(item => {
+        const li = document.createElement('li');
+        li.textContent = item;
+        list.appendChild(li);
+      });
+    }
+
+    // Initialize
+    updateRecipeList();
+    updatePantryList();
+    createMealPlannerUI();
   </script>
 </body>
 </html>
-
